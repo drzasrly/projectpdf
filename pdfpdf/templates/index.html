@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+/* SEARCH BOX */
+.search-container {
+    text-align:center;
+    margin-bottom:30px;
+}
+
+.search-container input {
+    width:60%;
+    padding:14px;
+    border-radius:30px;
+    border:1px solid #ddd;
+    outline:none;
+    font-size:16px;
+    box-shadow:0 4px 10px rgba(0,0,0,0.05);
+}
+
+.search-container button {
+    padding:14px 25px;
+    border-radius:30px;
+    border:none;
+    background:linear-gradient(90deg,#ff758c,#ff7eb3);
+    color:white;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+/* RESULT CARD */
+.result-card {
+    background:white;
+    padding:20px;
+    border-radius:15px;
+    margin-bottom:20px;
+    box-shadow:0 8px 25px rgba(0,0,0,0.05);
+    transition:0.3s;
+}
+
+.result-card:hover {
+    transform:translateY(-5px);
+}
+
+/* BEST */
+.best {
+    border-left:6px solid gold;
+}
+
+/* TITLE */
+.title {
+    font-size:18px;
+    font-weight:bold;
+    color:#d6336c;
+}
+
+/* ABSTRACT */
+.abstract {
+    color:#555;
+    margin-top:10px;
+}
+
+/* PROGRESS */
+.progress {
+    height:8px;
+    background:#eee;
+    border-radius:10px;
+    overflow:hidden;
+    margin-top:10px;
+}
+
+.progress-bar {
+    height:100%;
+    background:linear-gradient(90deg,#ff758c,#ff7eb3);
+}
+
+/* BADGE */
+.badge {
+    background:gold;
+    padding:4px 10px;
+    border-radius:10px;
+    font-size:12px;
+}
+</style>
+
+
+<h2 style="text-align:center;color:#ff4d88;">🔍 Mini Scholar Search</h2>
+
+<div class="search-container">
+    <form method="POST">
+        <input type="text" name="query" placeholder="Cari jurnal..." value="{{query}}">
+        <button>Search</button>
+    </form>
+</div>
+
+{% if results %}
+
+<p style="text-align:center;color:gray;">
+    Ditemukan {{results|length}} dokumen
+</p>
+
+{% for r in results %}
+<div class="result-card {% if loop.index == 1 %}best{% endif %}">
+
+    {% if loop.index == 1 %}
+    <span class="badge">🥇 BEST MATCH</span>
+    {% endif %}
+
+    <div class="title">
+        <a href="/pdf/{{r.name}}" target="_blank">
+            {{r.title}}
+        </a>
+    </div>
+
+    <div class="abstract">
+        {{r.abstract}}...
+    </div>
+
+    <div class="progress">
+        <div class="progress-bar" style="width: {{100 - r.score*10}}%"></div>
+    </div>
+
+    <small style="color:gray;">
+        Similarity Score: {{r.score}}
+    </small>
+
+    <br><br>
+
+    <button onclick="showDetail('{{r.name}}')" 
+            style="padding:8px 15px;border-radius:10px;border:none;background:#ff758c;color:white;">
+        ⚙️ Detail
+    </button>
+
+</div>
+{% endfor %}
+
+{% endif %}
+
+
+<!-- MODAL -->
+<div id="modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);">
+    <div style="background:white;width:50%;margin:5% auto;padding:20px;border-radius:15px;">
+        <h3>Detail Preprocessing</h3>
+        <div id="modal-body"></div>
+        <br>
+        <button onclick="closeModal()">Close</button>
+    </div>
+</div>
+
+<script>
+function showDetail(name){
+    document.getElementById("modal").style.display="block";
+
+    
+    let html = "";
+
+    data.forEach(d=>{
+        if(d.doc === name){
+            html += "<b>Tokens:</b><br>"+d.tokens+"<br><br>";
+            html += "<b>Stemming:</b><br>"+d.stemming;
+        }
+    });
+
+    document.getElementById("modal-body").innerHTML = html;
+}
+
+function closeModal(){
+    document.getElementById("modal").style.display="none";
+}
+</script>
+
+{% endblock %}

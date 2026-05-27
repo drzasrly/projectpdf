@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>📊 Analysis Dashboard</h2>
+
+<!-- TABS -->
+<div class="tabs">
+    <div class="tab active" onclick="showTab('tfidf')">TF-IDF</div>
+    <div class="tab" onclick="showTab('bow')">BoW</div>
+    <div class="tab" onclick="showTab('compare')">Perbandingan</div>
+    <div class="tab" onclick="showTab('preprocess')">Preprocessing</div>
+    <div class="tab" onclick="showTab('terminal')">Terminal</div>
+</div>
+
+<!-- TF-IDF -->
+<div id="tfidf" class="tab-content">
+<div class="box">
+<h3>📊 TF-IDF</h3>
+<table>
+<tr>
+<th>Term</th>
+{% for i in range(tfidf|length) %}
+<th>D{{i+1}}</th>
+{% endfor %}
+</tr>
+
+{% for word in vocab[:30] %}
+<tr>
+<td>{{word}}</td>
+{% for doc in tfidf %}
+<td>{{"%.4f"|format(doc[word])}}</td>
+{% endfor %}
+</tr>
+{% endfor %}
+</table>
+</div>
+</div>
+
+<!-- BOW -->
+<div id="bow" class="tab-content" style="display:none;">
+<div class="box">
+<h3>📦 Bag of Words</h3>
+<table>
+<tr>
+<th>Term</th>
+{% for i in range(bow|length) %}
+<th>D{{i+1}}</th>
+{% endfor %}
+</tr>
+
+{% for word in vocab %}
+<tr>
+<td>{{word}}</td>
+{% for doc in bow %}
+<td>{{doc[word]}}</td>
+{% endfor %}
+</tr>
+{% endfor %}
+</table>
+</div>
+</div>
+
+<!-- PERBANDINGAN -->
+<div id="compare" class="tab-content" style="display:none;">
+<div class="box">
+<h3>📊 Perbandingan TF-IDF vs BoW</h3>
+
+{% for i in range(tfidf|length if tfidf|length < 5 else 5) %}
+<div class="card">
+<b>Dokumen {{i+1}}</b><br>
+TF-IDF total: {{tfidf[i].values()|sum|round(2)}}<br>
+BoW total: {{bow[i].values()|sum}}
+</div>
+{% endfor %}
+
+</div>
+</div>
+
+<!-- PREPROCESS -->
+<div id="preprocess" class="tab-content" style="display:none;">
+<div class="box">
+<h3>⚙️ Preprocessing</h3>
+
+{% for p in preprocess %}
+<div class="card">
+<b>{{p.doc}}</b><br><br>
+
+<b>Tokens:</b><br>{{p.tokens}}<br><br>
+<b>Stemming:</b><br>{{p.stemming}}
+</div>
+{% endfor %}
+
+</div>
+</div>
+
+<!-- TERMINAL -->
+<div id="terminal" class="tab-content" style="display:none;">
+<div class="box">
+<h3>🖥️ Terminal Output</h3>
+
+<div class="terminal">
+Vocabulary: {{vocab}}
+
+{% for p in preprocess %}
+{{p.doc}} → {{p.stemming}}
+{% endfor %}
+</div>
+
+</div>
+</div>
+
+<script>
+function showTab(id){
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    event.target.classList.add('active');
+
+    document.querySelectorAll('.tab-content').forEach(c=>c.style.display='none');
+    document.getElementById(id).style.display='block';
+}
+</script>
+
+{% endblock %}
+
+<script>
+function showTab(id){
+    document.querySelectorAll('.tab-content').forEach(c=>c.style.display='none');
+    document.getElementById(id).style.display='block';
+}
+</script>

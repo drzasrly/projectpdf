@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mini Scholar Pro 💖</title>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            background: #fff5f7;
+        }
+
+        .navbar {
+            background: linear-gradient(90deg,#ff9a9e,#fad0c4);
+            padding: 15px;
+            display:flex;
+            gap:20px;
+        }
+
+        .navbar a {
+            color: #5a3e3e;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .container {
+            padding: 30px;
+        }
+
+        .box {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding:8px 15px;
+            border-radius:20px;
+            background:#ffe4e6;
+            cursor:pointer;
+        }
+
+        .tab.active {
+            background:#ff758c;
+            color:white;
+        }
+
+        .tabs {
+            display:flex;
+            gap:10px;
+            margin-bottom:20px;
+        }
+
+        table {
+            width:100%;
+            border-collapse:collapse;
+        }
+
+        th {
+            background:#ff758c;
+            color:white;
+        }
+
+        td, th {
+            padding:6px;
+            border:1px solid #ddd;
+            text-align:center;
+        }
+
+        .card {
+            background:#fff;
+            padding:15px;
+            border-radius:12px;
+            margin-bottom:10px;
+            border-left:5px solid #ff758c;
+        }
+
+        .terminal {
+            background:#2d2d2d;
+            color:#0f0;
+            padding:15px;
+            border-radius:10px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="navbar">
+    <a href="/">🔍 Search</a>
+    <a href="/analysis">📊 Analysis</a>
+</div>
+
+<div class="container">
+{% block content %}{% endblock %}
+</div>
+
+</body>
+</html>
