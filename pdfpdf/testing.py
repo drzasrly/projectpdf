@@ -76,13 +76,6 @@ def load_w2v_model(folder):
             
     return word_to_index, mbd_vectors
 
-def get_doc_vector_w2v(tokens, mbd_vectors):
-    vecs = [mbd_vectors[w] for w in tokens if w in mbd_vectors]
-    if len(vecs) == 0:
-        if len(mbd_vectors) == 0: return np.zeros(5)
-        return np.zeros(len(list(mbd_vectors.values())[0]))
-    return np.mean(vecs, axis=0)
-
 # =====================================================
 # SIMILARITY & DISTANCE
 # =====================================================
@@ -104,6 +97,25 @@ def cosine_similarity_arr(vec1, vec2):
 
 def euclidean_distance_arr(vec1, vec2):
     return np.linalg.norm(vec1 - vec2)
+
+def word_by_word_similarity(q_tokens, d_tokens, mbd_vectors, metric="cosine"):
+    q_vecs = [mbd_vectors[w] for w in q_tokens if w in mbd_vectors]
+    d_vecs = [mbd_vectors[w] for w in d_tokens if w in mbd_vectors]
+    
+    if not q_vecs or not d_vecs:
+        return 0.0 if metric == "cosine" else 9999.0
+        
+    total_sim = 0.0
+    count = 0
+    for qv in q_vecs:
+        for dv in d_vecs:
+            if metric == "cosine":
+                total_sim += cosine_similarity_arr(qv, dv)
+            else:
+                total_sim += euclidean_distance_arr(qv, dv)
+            count += 1
+            
+    return total_sim / count if count > 0 else (0.0 if metric == "cosine" else 9999.0)
 
 # =====================================================
 # EVALUATION METRICS (Top-K)
@@ -161,14 +173,12 @@ def main():
         print("CBOW model belum di-build.")
         return
     cbow_w2i, cbow_mbd = cbow_data
-    cbow_doc_vectors = {f: get_doc_vector_w2v(t, cbow_mbd) for f, t in doc_tokens.items()}
     
     skipgram_data = load_w2v_model(".")
     if not skipgram_data:
         print("Skip-Gram model belum di-build.")
         return
     sg_w2i, sg_mbd = skipgram_data
-    sg_doc_vectors = {f: get_doc_vector_w2v(t, sg_mbd) for f, t in doc_tokens.items()}
 
     # ==========================
     # EVALUATION
@@ -186,9 +196,6 @@ def main():
             if w in q_tf: q_tf[w] += 1
         q_tfidf_vec = {w: q_tf[w] * tfidf_idf[w] for w in tfidf_vocab}
         
-        q_cbow_vec = get_doc_vector_w2v(q_tokens, cbow_mbd)
-        q_sg_vec = get_doc_vector_w2v(q_tokens, sg_mbd)
-        
         ranks_tfidf = []
         for d in tfidf_docs:
             sim = cosine_similarity_dict(q_tfidf_vec, d["vector"], tfidf_vocab)
@@ -197,15 +204,15 @@ def main():
         ranked_files_tfidf = [x[0] for x in ranks_tfidf]
         
         ranks_cbow = []
-        for f, v in cbow_doc_vectors.items():
-            sim = cosine_similarity_arr(q_cbow_vec, v)
+        for f, d_tokens in doc_tokens.items():
+            sim = word_by_word_similarity(q_tokens, d_tokens, cbow_mbd, metric="cosine")
             ranks_cbow.append((f, sim))
         ranks_cbow.sort(key=lambda x: x[1], reverse=True)
         ranked_files_cbow = [x[0] for x in ranks_cbow]
         
         ranks_sg = []
-        for f, v in sg_doc_vectors.items():
-            sim = cosine_similarity_arr(q_sg_vec, v)
+        for f, d_tokens in doc_tokens.items():
+            sim = word_by_word_similarity(q_tokens, d_tokens, sg_mbd, metric="cosine")
             ranks_sg.append((f, sim))
         ranks_sg.sort(key=lambda x: x[1], reverse=True)
         ranked_files_sg = [x[0] for x in ranks_sg]
@@ -222,7 +229,10 @@ def main():
     
     eval_csv_data = [["Model", "Precision", "Recall", "F1", "MAP", "MRR", "NDCG"]]
     for model in ["TF-IDF", "CBOW", "Skip-Gram"]:
-        avgs = np.mean(results_agg[model], axis=0)
+        if len(results_agg[model]) > 0:
+            avgs = np.mean(results_agg[model], axis=0)
+        else:
+            avgs = [0.0] * 6
         print(f"{model:<15} {avgs[0]:<10.4f} {avgs[1]:<10.4f} {avgs[2]:<10.4f} {avgs[3]:<10.4f} {avgs[4]:<10.4f} {avgs[5]:<10.4f}")
         eval_csv_data.append([model, f"{avgs[0]:.4f}", f"{avgs[1]:.4f}", f"{avgs[2]:.4f}", f"{avgs[3]:.4f}", f"{avgs[4]:.4f}", f"{avgs[5]:.4f}"])
         
@@ -263,36 +273,34 @@ def main():
         res_tfidf_docs.sort(key=lambda x: x[1], reverse=True)
         
         # --- CBOW ---
-        q_cbow_vec = get_doc_vector_w2v(q_tokens, cbow_mbd)
         res_cbow_docs = []
-        for f, v in cbow_doc_vectors.items():
-            cos = cosine_similarity_arr(q_cbow_vec, v)
-            euc = euclidean_distance_arr(q_cbow_vec, v)
+        for f, d_tokens in doc_tokens.items():
+            cos = word_by_word_similarity(q_tokens, d_tokens, cbow_mbd, metric="cosine")
+            euc = word_by_word_similarity(q_tokens, d_tokens, cbow_mbd, metric="euclidean")
             res_cbow_docs.append((f, cos, euc))
         res_cbow_docs.sort(key=lambda x: x[1], reverse=True)
         
         res_cbow_words = []
         for w, v in cbow_mbd.items():
             if w not in q_tokens:
-                cos = cosine_similarity_arr(q_cbow_vec, v)
-                euc = euclidean_distance_arr(q_cbow_vec, v)
+                cos = word_by_word_similarity(q_tokens, [w], cbow_mbd, metric="cosine")
+                euc = word_by_word_similarity(q_tokens, [w], cbow_mbd, metric="euclidean")
                 res_cbow_words.append((w, cos, euc))
         res_cbow_words.sort(key=lambda x: x[1], reverse=True)
         
         # --- Skip-Gram ---
-        q_sg_vec = get_doc_vector_w2v(q_tokens, sg_mbd)
         res_sg_docs = []
-        for f, v in sg_doc_vectors.items():
-            cos = cosine_similarity_arr(q_sg_vec, v)
-            euc = euclidean_distance_arr(q_sg_vec, v)
+        for f, d_tokens in doc_tokens.items():
+            cos = word_by_word_similarity(q_tokens, d_tokens, sg_mbd, metric="cosine")
+            euc = word_by_word_similarity(q_tokens, d_tokens, sg_mbd, metric="euclidean")
             res_sg_docs.append((f, cos, euc))
         res_sg_docs.sort(key=lambda x: x[1], reverse=True)
         
         res_sg_words = []
         for w, v in sg_mbd.items():
             if w not in q_tokens:
-                cos = cosine_similarity_arr(q_sg_vec, v)
-                euc = euclidean_distance_arr(q_sg_vec, v)
+                cos = word_by_word_similarity(q_tokens, [w], sg_mbd, metric="cosine")
+                euc = word_by_word_similarity(q_tokens, [w], sg_mbd, metric="euclidean")
                 res_sg_words.append((w, cos, euc))
         res_sg_words.sort(key=lambda x: x[1], reverse=True)
         
